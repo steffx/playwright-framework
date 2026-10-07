@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShopLite | Products</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js"></script>
+</head>
+<body>
+  <header class="site"></header>
+  <main>
+    <h1>Products</h1>
+    <div class="filters">
+      <div>
+        <label for="search">Search</label>
+        <input id="search" type="search" placeholder="Search products" />
+      </div>
+      <div>
+        <label for="category">Category</label>
+        <select id="category">
+          <option value="">All</option>
+          <option value="bags">Bags</option>
+          <option value="apparel">Apparel</option>
+          <option value="gear">Gear</option>
+        </select>
+      </div>
+      <div>
+        <label for="sort">Sort by</label>
+        <select id="sort">
+          <option value="">Featured</option>
+          <option value="price-asc">Price (low to high)</option>
+          <option value="price-desc">Price (high to low)</option>
+          <option value="name-asc">Name (A to Z)</option>
+          <option value="name-desc">Name (Z to A)</option>
+        </select>
+      </div>
+    </div>
+    <p id="status" class="spinner" role="status">Loading products…</p>
+    <ul id="products" class="grid" aria-label="Product list"></ul>
+  </main>
+  <div id="toast" role="status" hidden></div>
+  <script>
+    Shop.requireLogin();
+    Shop.renderHeader();
+    const list = document.getElementById('products');
+    const status = document.getElementById('status');
+    let debounce;
+
+    async function load() {
+      const params = new URLSearchParams({
+        q: document.getElementById('search').value,
+        category: document.getElementById('category').value,
+        sort: document.getElementById('sort').value,
+      });
+      status.hidden = false;
+      status.textContent = 'Loading products…';
+      try {
+        const products = await Shop.api(`/api/products?${params}`);
+        list.innerHTML = products.map((p) => `
+          <li class="card" data-testid="product-card">
+            <h2><a href="/product.html?id=${p.id}">${p.name}</a></h2>
+            <p class="muted">${p.description}</p>
+            <div class="row">
+              <span class="price">${Shop.money(p.price)}</span>
+              <button type="button" data-id="${p.id}" ${p.stock === 0 ? 'disabled' : ''}
+                aria-label="${p.stock === 0 ? `${p.name} sold out` : `Add ${p.name} to cart`}">
+                ${p.stock === 0 ? 'Sold out' : 'Add to cart'}
+              </button>
+            </div>
+          </li>`).join('');
+        status.hidden = products.length > 0;
+        status.textContent = products.length ? '' : 'No products match your search';
+      } catch (err) {
+        list.innerHTML = '';
+        status.textContent = 'Failed to load products. Please try again.';
+      }
+    }
+
+    list.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if (!btn) return;
+      try {
+        await Shop.api('/api/cart', { method: 'POST', body: { productId: Number(btn.dataset.id), quantity: 1 } });
+        await Shop.refreshCartCount();
+        Shop.toast('Added to cart');
+      } catch (err) {
+        Shop.toast(err.message);
+      }
+    });
+    document.getElementById('search').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(load, 250); });
+    document.getElementById('category').addEventListener('change', load);
+    document.getElementById('sort').addEventListener('change', load);
+    load();
+  </script>
+</body>
+</html>

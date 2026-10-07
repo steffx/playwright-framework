@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShopLite | Product</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js"></script>
+</head>
+<body>
+  <header class="site"></header>
+  <main>
+    <p><a href="/inventory.html">← Back to products</a></p>
+    <article id="product" class="card"></article>
+  </main>
+  <div id="toast" role="status" hidden></div>
+  <script>
+    Shop.requireLogin();
+    Shop.renderHeader();
+    (async () => {
+      const id = new URLSearchParams(location.search).get('id');
+      const el = document.getElementById('product');
+      try {
+        const p = await Shop.api(`/api/products/${id}`);
+        document.title = `ShopLite | ${p.name}`;
+        el.innerHTML = `
+          <h1>${p.name}</h1>
+          <p>${p.description}</p>
+          <p class="price">${Shop.money(p.price)}</p>
+          <p class="muted">${p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}</p>
+          <label for="qty">Quantity</label>
+          <input id="qty" type="number" min="1" value="1" style="width: 100px" />
+          <p><button type="button" id="add" ${p.stock === 0 ? 'disabled' : ''}>Add to cart</button></p>`;
+        document.getElementById('add').addEventListener('click', async () => {
+          try {
+            await Shop.api('/api/cart', { method: 'POST', body: { productId: p.id, quantity: Number(document.getElementById('qty').value) } });
+            await Shop.refreshCartCount();
+            Shop.toast('Added to cart');
+          } catch (err) {
+            Shop.toast(err.message);
+          }
+        });
+      } catch (err) {
+        el.innerHTML = `<h1>Product not found</h1>`;
+      }
+    })();
+  </script>
+</body>
+</html>

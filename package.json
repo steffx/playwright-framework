@@ -1,0 +1,29 @@
+{
+  "name": "shoplite-playwright-framework",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright + TypeScript test framework for the ShopLite demo app: UI, API, network mocking, visual, accessibility and browser-feature tests.",
+  "scripts": {
+    "app": "node demo-app/server.js",
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=api --project=chromium",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --project=chromium --headed",
+    "test:update-snapshots": "playwright test --project=chromium --grep @visual --update-snapshots",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen http://localhost:3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@faker-js/faker": "^10.0.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}

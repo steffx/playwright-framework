@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShopLite | Log in</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js"></script>
+</head>
+<body>
+  <main>
+    <div class="card login">
+      <h1>Log in to ShopLite</h1>
+      <form id="login-form" novalidate>
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" />
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" />
+        <p><button type="submit">Log in</button></p>
+        <p id="error" class="error" role="alert"></p>
+      </form>
+      <p class="muted">Try <code>standard_user</code> / <code>secret_sauce</code></p>
+    </div>
+  </main>
+  <script>
+    if (Shop.token()) location.href = '/inventory.html';
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const error = document.getElementById('error');
+      const username = e.target.username.value.trim();
+      const password = e.target.password.value;
+      if (!username || !password) {
+        error.textContent = 'Username and password are required';
+        return;
+      }
+      try {
+        const { token, user } = await Shop.api('/api/auth/login', { method: 'POST', body: { username, password } });
+        localStorage.setItem('shoplite.token', token);
+        localStorage.setItem('shoplite.user', JSON.stringify(user));
+        location.href = '/inventory.html';
+      } catch (err) {
+        error.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShopLite | Playground</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Browser feature playground</h1>
+    <p class="muted">Small pages that exercise browser features the shop itself doesn't need.</p>
+
+    <section class="card" aria-labelledby="dialogs-h">
+      <h2 id="dialogs-h">Dialogs</h2>
+      <button type="button" id="alert-btn">Show alert</button>
+      <button type="button" id="confirm-btn">Delete account</button>
+      <button type="button" id="prompt-btn">Rename list</button>
+      <p id="dialog-result" role="status"></p>
+    </section>
+
+    <section class="card" aria-labelledby="frame-h">
+      <h2 id="frame-h">Embedded newsletter (iframe)</h2>
+      <iframe title="Newsletter signup" src="/playground/newsletter.html" width="100%" height="170" style="border:0"></iframe>
+    </section>
+
+    <section class="card" aria-labelledby="files-h">
+      <h2 id="files-h">Files</h2>
+      <label for="file-input">Attach receipt</label>
+      <input id="file-input" type="file" multiple />
+      <ul id="file-list" aria-label="Selected files"></ul>
+      <p><a href="/api/export/products.csv" download>Export products (CSV)</a></p>
+    </section>
+
+    <section class="card" aria-labelledby="tabs-h">
+      <h2 id="tabs-h">New tabs and popups</h2>
+      <a href="/playground/help.html" target="_blank" rel="noopener">Open help center</a>
+    </section>
+
+    <section class="card" aria-labelledby="time-h">
+      <h2 id="time-h">Time</h2>
+      <p>Today is <span id="today" data-testid="today"></span>.</p>
+      <p id="session-timer" role="timer">Your session expires in <span data-testid="seconds-left">60</span> seconds.</p>
+      <p id="session-expired" role="alert" hidden>Session expired. Please log in again.</p>
+    </section>
+
+    <section class="card" aria-labelledby="geo-h">
+      <h2 id="geo-h">Store locator</h2>
+      <button type="button" id="locate">Find nearest store</button>
+      <p id="nearest-store" role="status"></p>
+    </section>
+
+    <section class="card" aria-labelledby="dyn-h">
+      <h2 id="dyn-h">Slow content</h2>
+      <button type="button" id="load-recs">Load recommendations</button>
+      <ul id="recs" aria-label="Recommendations"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="dnd-h">
+      <h2 id="dnd-h">Wishlist (drag and drop)</h2>
+      <span class="chip" draggable="true" id="chip-bottle">Steel Water Bottle</span>
+      <div class="dropzone" id="wishlist" aria-label="Wishlist drop zone"></div>
+    </section>
+
+    <section class="card" aria-labelledby="hover-h">
+      <h2 id="hover-h">Hover and keyboard</h2>
+      <button type="button" id="info" aria-describedby="tip">Shipping info</button>
+      <span id="tip" role="tooltip" hidden>Free shipping over $50</span>
+      <p><label for="shortcut-box">Press Control+K in here</label><input id="shortcut-box" /></p>
+      <p id="shortcut-result" role="status"></p>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // Dialogs
+    $('alert-btn').onclick = () => { alert('Welcome to ShopLite!'); $('dialog-result').textContent = 'Alert closed'; };
+    $('confirm-btn').onclick = () => {
+      $('dialog-result').textContent = confirm('Are you sure you want to delete your account?') ? 'Account deleted' : 'Deletion cancelled';
+    };
+    $('prompt-btn').onclick = () => {
+      const name = prompt('New list name', 'My list');
+      $('dialog-result').textContent = name ? `List renamed to ${name}` : 'Rename cancelled';
+    };
+
+    // Files
+    $('file-input').onchange = (e) => {
+      $('file-list').innerHTML = [...e.target.files].map((f) => `<li>${f.name} (${f.size} bytes)</li>`).join('');
+    };
+
+    // Time
+    $('today').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    let left = 60;
+    const timer = setInterval(() => {
+      left -= 1;
+      document.querySelector('[data-testid="seconds-left"]').textContent = String(left);
+      if (left <= 0) {
+        clearInterval(timer);
+        $('session-timer').hidden = true;
+        $('session-expired').hidden = false;
+      }
+    }, 1000);
+
+    // Geolocation
+    const STORES = [
+      { name: 'Charlotte Uptown', lat: 35.2271, lon: -80.8431 },
+      { name: 'San Francisco Union Square', lat: 37.788, lon: -122.4075 },
+      { name: 'New York SoHo', lat: 40.7233, lon: -74.003 },
+    ];
+    $('locate').onclick = () => {
+      $('nearest-store').textContent = 'Locating…';
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const d = (s) => Math.hypot(s.lat - coords.latitude, s.lon - coords.longitude);
+          const best = STORES.reduce((a, b) => (d(a) < d(b) ? a : b));
+          $('nearest-store').textContent = `Nearest store: ${best.name}`;
+        },
+        () => { $('nearest-store').textContent = 'Location permission denied'; },
+      );
+    };
+
+    // Slow content (1.5 to 2.5 seconds)
+    $('load-recs').onclick = () => {
+      $('recs').innerHTML = '<li>Loading…</li>';
+      setTimeout(() => { $('recs').innerHTML = '<li>Merino Beanie</li><li>Canvas Tote</li><li>Headlamp 400</li>'; }, 1500 + Math.random() * 1000);
+    };
+
+    // Drag and drop
+    $('chip-bottle').addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', e.target.id));
+    $('wishlist').addEventListener('dragover', (e) => e.preventDefault());
+    $('wishlist').addEventListener('drop', (e) => {
+      e.preventDefault();
+      $('wishlist').appendChild($(e.dataTransfer.getData('text/plain')));
+    });
+
+    // Hover + keyboard
+    $('info').onmouseenter = () => ($('tip').hidden = false);
+    $('info').onmouseleave = () => ($('tip').hidden = true);
+    $('shortcut-box').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        $('shortcut-result').textContent = 'Command palette opened';
+      }
+    });
+  </script>
+</body>
+</html>

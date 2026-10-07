@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShopLite | Checkout</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js"></script>
+</head>
+<body>
+  <header class="site"></header>
+  <main>
+    <section id="step-info" class="card" style="max-width: 480px">
+      <h1>Checkout: your information</h1>
+      <form id="info-form" novalidate>
+        <label for="firstName">First name</label>
+        <input id="firstName" autocomplete="given-name" />
+        <label for="lastName">Last name</label>
+        <input id="lastName" autocomplete="family-name" />
+        <label for="postalCode">Postal code</label>
+        <input id="postalCode" autocomplete="postal-code" />
+        <p class="error" role="alert" id="info-error"></p>
+        <p class="row"><a href="/cart.html">Back to cart</a><button type="submit">Continue</button></p>
+      </form>
+    </section>
+
+    <section id="step-review" class="card" hidden>
+      <h1>Checkout: review order</h1>
+      <ul id="review-items"></ul>
+      <dl class="summary">
+        <dt>Subtotal</dt><dd data-testid="review-subtotal"></dd>
+        <dt>Tax</dt><dd data-testid="review-tax"></dd>
+        <dt>Total</dt><dd data-testid="review-total"></dd>
+      </dl>
+      <p class="row"><button type="button" class="secondary" id="back">Back</button><button type="button" id="place-order">Place order</button></p>
+      <p class="error" role="alert" id="review-error"></p>
+    </section>
+
+    <section id="step-done" class="card" hidden>
+      <h1>Thank you for your order!</h1>
+      <p>Your order number is <strong data-testid="order-id"></strong>.</p>
+      <p><a href="/inventory.html">Back to products</a></p>
+    </section>
+  </main>
+  <script>
+    Shop.requireLogin();
+    Shop.renderHeader();
+    const $ = (id) => document.getElementById(id) || document.querySelector(`[data-testid="${id}"]`);
+    let shipping;
+
+    $('info-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      shipping = { firstName: $('firstName').value.trim(), lastName: $('lastName').value.trim(), postalCode: $('postalCode').value.trim() };
+      const missing = Object.entries({ 'First name': shipping.firstName, 'Last name': shipping.lastName, 'Postal code': shipping.postalCode })
+        .filter(([, v]) => !v).map(([k]) => k);
+      if (missing.length) {
+        $('info-error').textContent = `${missing[0]} is required`;
+        return;
+      }
+      if (!/^\d{5}$/.test(shipping.postalCode)) {
+        $('info-error').textContent = 'Postal code must be 5 digits';
+        return;
+      }
+      $('info-error').textContent = '';
+      const cart = await Shop.api('/api/cart');
+      $('review-items').innerHTML = cart.items.map((i) => `<li>${i.quantity} × ${i.name} (${Shop.money(i.lineTotal)})</li>`).join('');
+      $('review-subtotal').textContent = Shop.money(cart.subtotal);
+      $('review-tax').textContent = Shop.money(cart.tax);
+      $('review-total').textContent = Shop.money(cart.total);
+      $('step-info').hidden = true;
+      $('step-review').hidden = false;
+    });
+
+    $('back').addEventListener('click', () => { $('step-review').hidden = true; $('step-info').hidden = false; });
+
+    $('place-order').addEventListener('click', async () => {
+      $('place-order').disabled = true;
+      try {
+        const order = await Shop.api('/api/orders', { method: 'POST', body: shipping });
+        $('order-id').textContent = order.id;
+        $('step-review').hidden = true;
+        $('step-done').hidden = false;
+        await Shop.refreshCartCount();
+      } catch (err) {
+        $('review-error').textContent = err.message;
+        $('place-order').disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

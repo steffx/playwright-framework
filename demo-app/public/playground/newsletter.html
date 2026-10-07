@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Newsletter</title><link rel="stylesheet" href="/styles.css" /></head>
+<body style="background:#fff">
+  <form id="nl" novalidate style="padding:8px">
+    <label for="email">Email address</label>
+    <input id="email" type="email" />
+    <p><button type="submit">Subscribe</button></p>
+    <p id="nl-msg" role="status"></p>
+  </form>
+  <script>
+    document.getElementById('nl').onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      document.getElementById('nl-msg').textContent = /.+@.+\..+/.test(email) ? `Subscribed ${email}` : 'Enter a valid email';
+    };
+  </script>
+</body>
+</html>
