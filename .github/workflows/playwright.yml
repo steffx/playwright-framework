@@ -27,6 +27,10 @@ jobs:
     name: API tests
     needs: checks
     runs-on: ubuntu-latest
+    # Same container as the UI jobs: merge-reports needs every blob report to share one test directory.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

@@ -1,0 +1,35 @@
+name: Update visual baselines
+
+# Run manually (Actions tab > Update visual baselines > Run workflow) after an intended UI change.
+# Regenerates screenshots inside the same container the test jobs use and commits them.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Regenerate baselines
+        run: npx playwright test --project=chromium --grep @visual --update-snapshots=all
+      - name: Commit changed baselines
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Baselines already up to date"
+          else
+            git commit -m "Update visual baselines from CI container"
+            git push
+          fi

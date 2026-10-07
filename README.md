@@ -81,7 +81,7 @@ Dockerfile, docker-compose.yml
 | Input | hover, `dragTo`, keyboard shortcuts (`ControlOrMeta`), `pressSequentially`, `evaluate`/`evaluateAll` | `tests/browser/interactions.spec.ts` |
 | Debugging | trace on first retry, screenshot and video on failure, `testInfo.attach`, `testInfo.outputPath` | config, several tests |
 | Reporting | list/dot, HTML, JUnit, blob (for shard merging), custom reporter | `playwright.config.ts`, `reporters/` |
-| CI/CD | GitHub Actions, official Playwright container, sharding, `merge-reports`, nightly schedule | `.github/workflows/playwright.yml` |
+| CI/CD | GitHub Actions, official Playwright container, sharding, `merge-reports`, nightly schedule, one-click baseline update workflow | `.github/workflows/playwright.yml` |
 | Docker | test image, compose with app and tests as separate services (`BASE_URL`) | `Dockerfile`, `docker-compose.yml` |
 
 ## Bugs this suite found while it was being built
@@ -107,7 +107,7 @@ UPDATE_HAR=1 npx playwright test --grep HAR --project=chromium  # re-record the 
 BASE_URL=https://staging.example.com npx playwright test        # point at another environment
 ```
 
-Visual baselines are per browser and OS. The committed ones were generated on Linux Chromium; regenerate them inside the Docker image before relying on them in CI.
+Visual baselines are per browser version and OS, so they are generated in CI, inside the same Playwright container the tests run in: Actions tab, **Update visual baselines**, Run workflow. It commits any changed screenshots back to the branch.
 
 ## Ideas to extend it
 
